@@ -35,10 +35,92 @@ final class NewHabitViewController: UIViewController {
     // MARK: - Properties
 
     var onCreate: ((Tracker) -> Void)?
-    private let nameField = UITextField()
-    private let limitLabel = UILabel()
-    private let createButton = UIButton(type: .system)
-    private let optionsTable = UITableView(frame: .zero, style: .insetGrouped)
+
+    private lazy var nameField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = NSLocalizedString("habit.name_placeholder", comment: "Название трекера")
+        textField.backgroundColor = .ypBackground
+        textField.textColor = .ypBlack
+        textField.layer.cornerRadius = Constants.cornerRadius
+        textField.clearButtonMode = .whileEditing
+        textField.delegate = self
+        textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: Constants.textInset, height: Constants.fieldHeight))
+        textField.leftViewMode = .always
+        textField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        return textField
+    }()
+
+    private let limitLabel: UILabel = {
+        let label = UILabel()
+        label.text = NSLocalizedString("habit.name_limit", comment: "Ограничение длины названия")
+        label.textColor = .ypRed
+        label.font = .systemFont(ofSize: Constants.limitLabelFontSize)
+        label.textAlignment = .center
+        label.isHidden = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private lazy var optionsTable: UITableView = {
+        let table = UITableView(frame: .zero, style: .insetGrouped)
+        table.dataSource = self
+        table.delegate = self
+        table.register(UITableViewCell.self, forCellReuseIdentifier: "OptionCell")
+        table.rowHeight = Constants.rowHeight
+        table.isScrollEnabled = false
+        table.backgroundColor = .clear
+        table.separatorColor = .ypLightGray
+        table.layoutMargins = UIEdgeInsets(top: 0, left: Constants.horizontalInset, bottom: 0, right: Constants.horizontalInset)
+        table.estimatedSectionHeaderHeight = 0
+        table.estimatedSectionFooterHeight = 0
+        table.separatorInset = UIEdgeInsets(top: 0, left: Constants.textInset, bottom: 0, right: Constants.textInset)
+        table.translatesAutoresizingMaskIntoConstraints = false
+        return table
+    }()
+
+    private lazy var cancelButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(NSLocalizedString("habit.cancel", comment: "Отменить создание"), for: .normal)
+        button.setTitleColor(.ypRed, for: .normal)
+        button.layer.borderWidth = Constants.cancelBorderWidth
+        button.layer.borderColor = UIColor.ypRed.cgColor
+        button.layer.cornerRadius = Constants.cornerRadius
+        button.addTarget(self, action: #selector(cancel), for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var createButton: UIButton = {
+        let button = UIButton(type: .system)
+        var configuration = UIButton.Configuration.plain()
+        configuration.title = NSLocalizedString("habit.create", comment: "Создать трекер")
+        configuration.baseForegroundColor = .ypWhite
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
+            var attributes = attributes
+            attributes.foregroundColor = .ypWhite
+            return attributes
+        }
+        configuration.cornerStyle = .fixed
+        configuration.background.cornerRadius = Constants.cornerRadius
+        button.configuration = configuration
+        button.configurationUpdateHandler = { button in
+            var configuration = button.configuration
+            configuration?.background.backgroundColor = button.isEnabled ? .ypBlack : .ypGray
+            button.configuration = configuration
+        }
+        button.addTarget(self, action: #selector(create), for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var buttonsStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [cancelButton, createButton])
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.spacing = Constants.buttonSpacing
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
     private var optionsTopConstraint: NSLayoutConstraint!
     private var schedule = Set(Weekday.allCases)
 
@@ -58,16 +140,6 @@ final class NewHabitViewController: UIViewController {
     // MARK: - Setup
 
     private func setupNameField() {
-        nameField.placeholder = NSLocalizedString("habit.name_placeholder", comment: "Название трекера")
-        nameField.backgroundColor = .ypBackground
-        nameField.textColor = .ypBlack
-        nameField.layer.cornerRadius = Constants.cornerRadius
-        nameField.clearButtonMode = .whileEditing
-        nameField.delegate = self
-        nameField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: Constants.textInset, height: Constants.fieldHeight))
-        nameField.leftViewMode = .always
-        nameField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
-        nameField.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(nameField)
         NSLayoutConstraint.activate([
             nameField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Constants.topInset),
@@ -78,12 +150,6 @@ final class NewHabitViewController: UIViewController {
     }
 
     private func setupLimitLabel() {
-        limitLabel.text = NSLocalizedString("habit.name_limit", comment: "Ограничение длины названия")
-        limitLabel.textColor = .ypRed
-		limitLabel.font = .systemFont(ofSize: Constants.limitLabelFontSize)
-        limitLabel.textAlignment = .center
-        limitLabel.isHidden = true
-        limitLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(limitLabel)
         NSLayoutConstraint.activate([
             limitLabel.topAnchor.constraint(equalTo: nameField.bottomAnchor, constant: Constants.limitLabelTopInset),
@@ -94,23 +160,6 @@ final class NewHabitViewController: UIViewController {
     }
 
     private func setupOptions() {
-        optionsTable.dataSource = self
-        optionsTable.delegate = self
-        optionsTable.register(UITableViewCell.self, forCellReuseIdentifier: "OptionCell")
-        optionsTable.rowHeight = Constants.rowHeight
-        optionsTable.isScrollEnabled = false
-        optionsTable.backgroundColor = .clear
-        optionsTable.separatorColor = .ypLightGray
-        optionsTable.layoutMargins = UIEdgeInsets(top: 0, left: Constants.horizontalInset, bottom: 0, right: Constants.horizontalInset)
-        optionsTable.estimatedSectionHeaderHeight = 0
-        optionsTable.estimatedSectionFooterHeight = 0
-        optionsTable.separatorInset = UIEdgeInsets(
-			top: 0,
-			left: Constants.textInset,
-			bottom: 0,
-			right: Constants.textInset
-		)
-        optionsTable.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(optionsTable)
         optionsTopConstraint = optionsTable.topAnchor.constraint(equalTo: nameField.bottomAnchor, constant: Constants.sectionSpacing)
         NSLayoutConstraint.activate([
@@ -122,43 +171,12 @@ final class NewHabitViewController: UIViewController {
     }
 
     private func setupButtons() {
-        let cancelButton = UIButton(type: .system)
-        cancelButton.setTitle(NSLocalizedString("habit.cancel", comment: "Отменить создание"), for: .normal)
-        cancelButton.setTitleColor(.ypRed, for: .normal)
-        cancelButton.layer.borderWidth = Constants.cancelBorderWidth
-        cancelButton.layer.borderColor = UIColor.ypRed.cgColor
-        cancelButton.layer.cornerRadius = Constants.cornerRadius
-        cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
-
-        var createConfiguration = UIButton.Configuration.plain()
-        createConfiguration.title = NSLocalizedString("habit.create", comment: "Создать трекер")
-        createConfiguration.baseForegroundColor = .ypWhite
-        createConfiguration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
-            var attributes = attributes
-            attributes.foregroundColor = .ypWhite
-            return attributes
-        }
-        createConfiguration.cornerStyle = .fixed
-        createConfiguration.background.cornerRadius = Constants.cornerRadius
-        createButton.configuration = createConfiguration
-        createButton.configurationUpdateHandler = { button in
-            var configuration = button.configuration
-            configuration?.background.backgroundColor = button.isEnabled ? .ypBlack : .ypGray
-            button.configuration = configuration
-        }
-        createButton.addTarget(self, action: #selector(create), for: .touchUpInside)
-
-        let buttons = UIStackView(arrangedSubviews: [cancelButton, createButton])
-        buttons.axis = .horizontal
-        buttons.distribution = .fillEqually
-        buttons.spacing = Constants.buttonSpacing
-        buttons.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(buttons)
+        view.addSubview(buttonsStack)
         NSLayoutConstraint.activate([
-            buttons.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: Constants.horizontalInset),
-            buttons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -Constants.horizontalInset),
-            buttons.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor, constant: -Constants.buttonBottomInset),
-            buttons.heightAnchor.constraint(equalToConstant: Constants.buttonHeight)
+            buttonsStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: Constants.horizontalInset),
+            buttonsStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -Constants.horizontalInset),
+            buttonsStack.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor, constant: -Constants.buttonBottomInset),
+            buttonsStack.heightAnchor.constraint(equalToConstant: Constants.buttonHeight)
         ])
     }
 

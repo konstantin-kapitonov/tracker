@@ -46,6 +46,7 @@ final class TrackersViewController: UIViewController {
 	
 	private var categories: [TrackerCategory] = []
 	private var completedTrackers: [TrackerRecord] = []
+    private var currentDate: Date = Date()
     private var visibleCategories: [TrackerCategory] = []
     private let defaultCategoryName = NSLocalizedString("habit.default_category", comment: "Категория новых привычек")
     private var emptyState: UIStackView!
@@ -80,6 +81,7 @@ final class TrackersViewController: UIViewController {
         datePicker.datePickerMode = .date
         datePicker.preferredDatePickerStyle = .compact
         datePicker.locale = Locale(identifier: "ru_RU")
+        datePicker.date = currentDate
         datePicker.addTarget(self, action: #selector(filtersChanged), for: .valueChanged)
 
         let addItem = UIBarButtonItem(customView: addButton)
@@ -180,7 +182,10 @@ final class TrackersViewController: UIViewController {
 
     // MARK: - Actions and tracker state
 
-    @objc private func filtersChanged() { updateVisibleTrackers() }
+    @objc private func filtersChanged() {
+        currentDate = datePicker.date
+        updateVisibleTrackers()
+    }
 
     @objc private func showNewHabit() {
         let controller = NewHabitViewController()
@@ -197,7 +202,7 @@ final class TrackersViewController: UIViewController {
     }
 
     private func updateVisibleTrackers() {
-        let calendarDay = Calendar.current.component(.weekday, from: datePicker.date)
+        let calendarDay = Calendar.current.component(.weekday, from: currentDate)
         let weekday = Weekday(rawValue: calendarDay)
         visibleCategories = categories.compactMap { category in
             let trackers = category.trackers.filter { tracker in
@@ -212,11 +217,11 @@ final class TrackersViewController: UIViewController {
 
     private func toggleCompletion(for tracker: Tracker) {
         let calendar = Calendar.current
-        guard calendar.startOfDay(for: datePicker.date) <= calendar.startOfDay(for: Date()) else { return }
-        if let index = completedTrackers.firstIndex(where: { $0.trackerID == tracker.id && calendar.isDate($0.date, inSameDayAs: datePicker.date) }) {
+        guard calendar.startOfDay(for: currentDate) <= calendar.startOfDay(for: Date()) else { return }
+        if let index = completedTrackers.firstIndex(where: { $0.trackerID == tracker.id && calendar.isDate($0.date, inSameDayAs: currentDate) }) {
             completedTrackers.remove(at: index)
         } else {
-            completedTrackers.append(TrackerRecord(trackerID: tracker.id, date: calendar.startOfDay(for: datePicker.date)))
+            completedTrackers.append(TrackerRecord(trackerID: tracker.id, date: calendar.startOfDay(for: currentDate)))
         }
         collectionView.reloadData()
     }
@@ -233,8 +238,8 @@ extension TrackersViewController: UICollectionViewDataSource, UICollectionViewDe
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TrackerCell.reuseIdentifier, for: indexPath) as! TrackerCell
         let tracker = visibleCategories[indexPath.section].trackers[indexPath.item]
         let records = completedTrackers.filter { $0.trackerID == tracker.id }
-        let completed = records.contains { Calendar.current.isDate($0.date, inSameDayAs: datePicker.date) }
-        let canComplete = Calendar.current.startOfDay(for: datePicker.date) <= Calendar.current.startOfDay(for: Date())
+        let completed = records.contains { Calendar.current.isDate($0.date, inSameDayAs: currentDate) }
+        let canComplete = Calendar.current.startOfDay(for: currentDate) <= Calendar.current.startOfDay(for: Date())
         cell.configure(tracker: tracker, count: records.count, completed: completed, canComplete: canComplete)
         cell.onCompletionTap = { [weak self] in self?.toggleCompletion(for: tracker) }
         return cell

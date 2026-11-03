@@ -39,6 +39,7 @@ final class ScheduleViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = NSLocalizedString("habit.schedule", comment: "Заголовок расписания")
+        navigationItem.hidesBackButton = true
         view.backgroundColor = .ypWhite
         setupTableView()
         setupDoneButton()
