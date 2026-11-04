@@ -1,0 +1,39 @@
+// MARK: - Экран трекеров
+
+"trackers.title" = "Трекеры";
+"trackers.search" = "Поиск";
+"trackers.empty" = "Что будем отслеживать?";
+
+// MARK: - Карточка трекера
+
+"tracker.mark_completed" = "Отметить выполненным";
+"tracker.unmark_completed" = "Снять отметку";
+
+// MARK: - Экран статистики
+
+"statistics.title" = "Статистика";
+
+// MARK: - Создание привычки
+
+"habit.title" = "Новая привычка";
+"habit.name_placeholder" = "Введите название трекера";
+"habit.name_limit" = "Ограничение 38 символов";
+"habit.category" = "Категория";
+"habit.default_category" = "Новые привычки";
+"habit.schedule" = "Расписание";
+"habit.cancel" = "Отменить";
+"habit.create" = "Создать";
+
+// MARK: - Расписание
+
+"schedule.done" = "Готово";
+
+// MARK: - Дни недели
+
+"weekday.monday" = "Понедельник";
+"weekday.tuesday" = "Вторник";
+"weekday.wednesday" = "Среда";
+"weekday.thursday" = "Четверг";
+"weekday.friday" = "Пятница";
+"weekday.saturday" = "Суббота";
+"weekday.sunday" = "Воскресенье";
