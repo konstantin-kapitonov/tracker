@@ -21,6 +21,9 @@
 "habit.category" = "Категория";
 "habit.default_category" = "Новые привычки";
 "habit.schedule" = "Расписание";
+"habit.emoji" = "Emoji";
+"habit.color" = "Цвет";
+"habit.color_accessibility" = "Цвет %ld";
 "habit.cancel" = "Отменить";
 "habit.create" = "Создать";
 
